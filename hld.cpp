@@ -1,13 +1,32 @@
 #include <stdio.h>
 #include <GL/freeglut.h>
 
+// attributes for sprite rendering:
+// color
+// transparency
+// flip horizontal
+// flip vertical
+// mask effects, SOLID, VLINE, HLINE, DIAG
+// frame, layer
+// pass in a token to identify which sprite
+
 static int screenw = 768;
 static int screenh = 480;
-static int renderw = screenw / 4;
-static int renderh = screenh / 4;
+static int renderw = screenw / 2;
+static int renderh = screenh / 2;
 static int framenum = 0;
 
-enum { BUILTIN_CHECK, BUILTIN_HLINE, BUILTIN_VLINE, SPR0, NUM_SPR };
+// texture identifiers
+enum
+{
+	BUILTIN_HLINE,
+	BUILTIN_VLINE,
+	BUILTIN_DLINE,
+	BUILTIN_CHECK,
+	BUILTIN_POINT,
+	SPR0,
+	NUM_SPR
+};
 
 static unsigned char *sprdata;
 static int framestride = 9 * 9 * 4;
@@ -19,7 +38,7 @@ int ReadFile(const char* filename, void **data)
 	if(!fp)
 		printf("Failed to open file \"%s\"\n", filename);
 
-	int curpos = ftell(fp)
+	int curpos = ftell(fp);
 	fseek(fp, 0, SEEK_END);
 	int size = ftell(fp);
 	fseek(fp, curpos, SEEK_SET);
@@ -33,6 +52,9 @@ int ReadFile(const char* filename, void **data)
 
 static void InitTexture()
 {
+	// allow small rows on a byte alignment
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 	// alpha hline
 	{
 		unsigned char data[2] = { 0xff, 0x0 };
@@ -55,15 +77,55 @@ static void InitTexture()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}
 
+	// alpha checkerboard
+	{
+		unsigned char data[4] = { 0xff, 0x0, 0x0, 0xff };
+		glBindTexture(GL_TEXTURE_2D, BUILTIN_CHECK);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+
+	// alpha point
+	{
+		unsigned char data[4] = { 0xff, 0x0, 0x0, 0x0 };
+		glBindTexture(GL_TEXTURE_2D, BUILTIN_POINT);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+
+	// alpha diag
+	{
+		unsigned char data[16] =
+		{
+			 0x0,  0x0, 0xff,  0x0,
+			 0x0,  0x0,  0x0, 0xff,
+			0xff,  0x0,  0x0,  0x0,
+			 0x0, 0xff,  0x0,  0x0
+		};
+
+
+		glBindTexture(GL_TEXTURE_2D, BUILTIN_DLINE);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+
 	// spr0
 	{
 		glBindTexture(GL_TEXTURE_2D, SPR0);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 9, 9, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		//glTexEnvi(GL_TEXTURE_2D, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 	}
 }
 
@@ -77,9 +139,9 @@ static void LoadData()
 static void UploadTexture()
 {
 	unsigned char *pixels = sprdata + ((framenum % 42) * framestride);
-	//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 9, 9, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 9, 9, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 	glBindTexture(GL_TEXTURE_2D, SPR0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 9, 9, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 9, 9, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 }
 
 static void DrawAlphaLayer()
@@ -112,22 +174,34 @@ static void DrawAlphaLayer()
 	glColorMask(1, 1, 1, 1);
 }
 
-
 // 9 comes from the sprite width
 // scaling will affect this
+#if 0
 static int posx = renderw - 5 - 2;
 static int posy = renderh - 5 - 2;
 static int sizex = 9;
 static int sizey = 9;
 static int centerx = 4;
 static int centery = 4;
+#endif
+
+static int posx = 0;
+static int posy = 0;
+static int sizex = 9;
+static int sizey = 9;
+static int centerx = 0;
+static int centery = 0;
 
 static void DrawSpr()
 {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ZERO);
+
+	// this would be done by the client
 	//if ((framenum & 0x3) == (rand() %4))
 	//	glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
+
+	glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, SPR0);
@@ -159,7 +233,7 @@ static void Draw()
 {
 	UploadTexture();
 
-	//DrawAlphaLayer();
+	DrawAlphaLayer();
 
 	DrawSpr();
 }
@@ -168,7 +242,6 @@ static void ReshapeFunc(int w, int h)
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	//glOrtho(-1, 1, -1, 1, -1, 1);
 
 	glViewport(0, 0, screenw, screenh);
 }
