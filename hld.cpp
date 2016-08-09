@@ -167,21 +167,19 @@ static void UploadTexture()
 //
 // interface to drawsprite
 //
-#if 1
 static int posx = 0;
 static int posy = 0;
 static GLuint alphatex = BUILTIN_SOLID;
 static bool flipx = false;
 static bool flipy = false;
-#endif
+static float rgba[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 #if 0
 static int posx = renderw - sizex - 2;
 static int posy = renderh - sizey - 2;
-static GLuint alphatex = BUILTIN_SOLID;
 #endif
 
 // internal draw sprite data
-static float vertices[4][6];
+static float vertices[4][10];
 
 static float AlphaScaleFactor()
 {
@@ -214,6 +212,10 @@ static void AssembleVertexData()
 	vertices[0][3] = 0.0f;
 	vertices[0][4] = 0.0f;
 	vertices[0][5] = 0.0f;
+	vertices[0][6] = rgba[0];
+	vertices[0][7] = rgba[1];
+	vertices[0][8] = rgba[2];
+	vertices[0][9] = rgba[3];
 
 	vertices[1][0] = basex + sizex;
 	vertices[1][1] = basey;
@@ -221,6 +223,10 @@ static void AssembleVertexData()
 	vertices[1][3] = 0.0f;
 	vertices[1][4] = sizex * alphascale;
 	vertices[1][5] = 0.0f;
+	vertices[1][6] = rgba[0];
+	vertices[1][7] = rgba[1];
+	vertices[1][8] = rgba[2];
+	vertices[1][9] = rgba[3];
 
 	vertices[2][0] = basex;
 	vertices[2][1] = basey + sizey;
@@ -228,6 +234,10 @@ static void AssembleVertexData()
 	vertices[2][3] = 1.0f;
 	vertices[2][4] = 0.0f;
 	vertices[2][5] = sizey * alphascale;
+	vertices[2][6] = rgba[0];
+	vertices[2][7] = rgba[1];
+	vertices[2][8] = rgba[2];
+	vertices[2][9] = rgba[3];
 
 	vertices[3][0] = basex + sizex;
 	vertices[3][1] = basey + sizey;
@@ -235,6 +245,10 @@ static void AssembleVertexData()
 	vertices[3][3] = 1.0f;
 	vertices[3][4] = sizex * alphascale;
 	vertices[3][5] = sizey * alphascale;
+	vertices[3][6] = rgba[0];
+	vertices[3][7] = rgba[1];
+	vertices[3][8] = rgba[2];
+	vertices[3][9] = rgba[3];
 
 	if (flipx)
 	{
@@ -266,6 +280,7 @@ static void DrawAlphaLayer()
 	for (int i = 0; i < 4; i++)
 	{
 		glTexCoord2f(vertices[i][4], vertices[i][5]);
+		glColor4f(1, 1, 1, 1);
 		glVertex2f(vertices[i][0], vertices[i][1]);
 	}
 
@@ -290,6 +305,7 @@ static void DrawColorLayer()
 	for (int i = 0; i < 4; i++)
 	{
 		glTexCoord2f(vertices[i][2], vertices[i][3]);
+		glColor4f(vertices[i][6], vertices[i][7], vertices[i][8], vertices[i][9]);
 		glVertex2f(vertices[i][0], vertices[i][1]);
 	}
 
