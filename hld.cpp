@@ -19,6 +19,7 @@ static int framenum = 0;
 // texture identifiers
 enum
 {
+	BUILTIN_SOLID,
 	BUILTIN_HLINE,
 	BUILTIN_VLINE,
 	BUILTIN_DLINE,
@@ -28,9 +29,14 @@ enum
 	NUM_SPR
 };
 
+// sprite data
+static int sizex = 40;
+static int sizey = 55;
+static int centerx = 0;
+static int centery = 0;
+static int numframes = 1;
+static int framestride = sizex * sizey * 4;
 static unsigned char *sprdata;
-static int framestride = 9 * 9 * 4;
-static GLuint sprtexture;
 
 int ReadFile(const char* filename, void **data)
 {
@@ -50,10 +56,25 @@ int ReadFile(const char* filename, void **data)
 	return size;
 }
 
+// fixme:
+// modern opengl says that internal format and external format must match
+// also, use a sized internal format
+// this needs to happen anyway to use a luminance mask
 static void InitTexture()
 {
 	// allow small rows on a byte alignment
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	// solid
+	{
+		unsigned char data[2] = { 0xff };
+		glBindTexture(GL_TEXTURE_2D, BUILTIN_SOLID);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
 
 	// alpha hline
 	{
@@ -99,7 +120,7 @@ static void InitTexture()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}
 
-	// alpha diag
+	// alpha diagonal lines
 	{
 		unsigned char data[16] =
 		{
@@ -121,7 +142,7 @@ static void InitTexture()
 	// spr0
 	{
 		glBindTexture(GL_TEXTURE_2D, SPR0);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 9, 9, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sizex, sizey, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -131,18 +152,103 @@ static void InitTexture()
 
 static void LoadData()
 {
-	ReadFile("diamond", (void**)&sprdata);
+	ReadFile("troo", (void**)&sprdata);
 
 	InitTexture();
 }
 
 static void UploadTexture()
 {
-	unsigned char *pixels = sprdata + ((framenum % 42) * framestride);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 9, 9, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	unsigned char *pixels = sprdata + ((framenum % numframes) * framestride);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizex, sizey, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 	glBindTexture(GL_TEXTURE_2D, SPR0);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 9, 9, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 }
+
+//
+// interface to drawsprite
+//
+#if 1
+static int posx = 0;
+static int posy = 0;
+static GLuint alphatex = BUILTIN_SOLID;
+static bool flipx = false;
+static bool flipy = false;
+#endif
+#if 0
+static int posx = renderw - sizex - 2;
+static int posy = renderh - sizey - 2;
+static GLuint alphatex = BUILTIN_SOLID;
+#endif
+
+// internal draw sprite data
+static float vertices[4][6];
+
+static float AlphaScaleFactor()
+{
+	if (alphatex == BUILTIN_SOLID)
+		return 1.0f;
+	else if (alphatex == BUILTIN_DLINE)
+		return 0.25f;
+	else
+		return 0.5f;
+}
+
+static void SwapFloat(float *x, float *y)
+{
+	float temp = *x;
+	*x = *y;
+	*y = temp;
+}
+
+static void AssembleVertexData()
+{
+	int basex = posx - centerx;
+	int basey = posy - centery;
+
+	float alphascale = AlphaScaleFactor();
+
+	// assemble the vertex data xy, uv
+	vertices[0][0] = basex;
+	vertices[0][1] = basey;
+	vertices[0][2] = 0.0f;
+	vertices[0][3] = 0.0f;
+	vertices[0][4] = 0.0f;
+	vertices[0][5] = 0.0f;
+
+	vertices[1][0] = basex + sizex;
+	vertices[1][1] = basey;
+	vertices[1][2] = 1.0f;
+	vertices[1][3] = 0.0f;
+	vertices[1][4] = sizex * alphascale;
+	vertices[1][5] = 0.0f;
+
+	vertices[2][0] = basex;
+	vertices[2][1] = basey + sizey;
+	vertices[2][2] = 0.0f;
+	vertices[2][3] = 1.0f;
+	vertices[2][4] = 0.0f;
+	vertices[2][5] = sizey * alphascale;
+
+	vertices[3][0] = basex + sizex;
+	vertices[3][1] = basey + sizey;
+	vertices[3][2] = 1.0f;
+	vertices[3][3] = 1.0f;
+	vertices[3][4] = sizex * alphascale;
+	vertices[3][5] = sizey * alphascale;
+
+	if (flipx)
+	{
+		SwapFloat(&vertices[0][2], &vertices[1][2]);
+		SwapFloat(&vertices[2][2], &vertices[3][2]);
+	}
+
+	if (flipy)
+	{
+		SwapFloat(&vertices[0][3], &vertices[2][3]);
+		SwapFloat(&vertices[1][3], &vertices[3][3]);
+	}
+}
+
 
 static void DrawAlphaLayer()
 {
@@ -151,22 +257,17 @@ static void DrawAlphaLayer()
 	glBlendFunc(GL_ONE, GL_ZERO);
 
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, BUILTIN_VLINE);
+	glBindTexture(GL_TEXTURE_2D, alphatex);
 	glColor3f(1, 1, 1);
 
 	glBegin(GL_TRIANGLE_STRIP);
 
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(0.0f, 0.0f);
-
-	glTexCoord2f(4.5f, 0.0f);
-	glVertex2f(9.0, 0.0f);
-
-	glTexCoord2f(0.0f, 4.5f);
-	glVertex2f(0.0f, 9.0f);
-
-	glTexCoord2f(4.5f, 4.5f);
-	glVertex2f(9.0f, 9.0f);
+	glBegin(GL_TRIANGLE_STRIP);
+	for (int i = 0; i < 4; i++)
+	{
+		glTexCoord2f(vertices[i][4], vertices[i][5]);
+		glVertex2f(vertices[i][0], vertices[i][1]);
+	}
 
 	glEnd();
 
@@ -174,66 +275,53 @@ static void DrawAlphaLayer()
 	glColorMask(1, 1, 1, 1);
 }
 
-// 9 comes from the sprite width
-// scaling will affect this
-#if 0
-static int posx = renderw - 5 - 2;
-static int posy = renderh - 5 - 2;
-static int sizex = 9;
-static int sizey = 9;
-static int centerx = 4;
-static int centery = 4;
-#endif
 
-static int posx = 0;
-static int posy = 0;
-static int sizex = 9;
-static int sizey = 9;
-static int centerx = 0;
-static int centery = 0;
-
-static void DrawSpr()
+static void DrawColorLayer()
 {
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_ONE, GL_ZERO);
-
-	// this would be done by the client
-	//if ((framenum & 0x3) == (rand() %4))
-	//	glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
-
 	glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, SPR0);
 	glColor3f(1, 1, 1);
 
+
 	glBegin(GL_TRIANGLE_STRIP);
-
-	int basex = posx - centerx;
-	int basey = posy - centery;
-
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(basex + 0.0f, basey + 0.0f);
-
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(basex + sizex, basey + 0.0f);
-
-	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(basex + 0.0f, basey + sizey);
-
-	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(basex + sizex, basey + sizey);
+	for (int i = 0; i < 4; i++)
+	{
+		glTexCoord2f(vertices[i][2], vertices[i][3]);
+		glVertex2f(vertices[i][0], vertices[i][1]);
+	}
 
 	glEnd();
 
 	glDisable(GL_BLEND);
 }
 
+static void DrawSpr()
+{
+
+	// setup the state
+	{
+		alphatex = BUILTIN_SOLID;
+		flipx = 1;
+		flipy = 1;
+
+		// this would be done by the client
+		//if ((framenum & 0x3) == (rand() %4))
+		//	alphatex = ((rand() % 2) ? BUILTIN_VLINE : BUILTIN_POINT);
+	}
+
+	AssembleVertexData();
+
+	DrawAlphaLayer();
+
+	DrawColorLayer();
+}
+
 static void Draw()
 {
 	UploadTexture();
-
-	DrawAlphaLayer();
 
 	DrawSpr();
 }
