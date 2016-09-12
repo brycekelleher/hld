@@ -1,0 +1,16 @@
+Projection methods change the position directly
+Impulse based methods change the first derivative (velocity)
+Penalty methods change the second derivative (acceleration)
+
+Three main ways to do collision detection. The idea is to solve all the penetrations at once
+1/ Correct against each object iteratively. Has issues with intersection internal lines
+2/ Build a manifold by sampling against the solidness of the world. Solve the intersections against the manifold
+3/ Sample the world with signed distance.
+
+Using a manifold gets around the problem of internal edge intersection as the world is only sampled for solidness. The binary solidness result produces an intersection manifold which can be used to solve the intersections. Essentially this is sampling the world to find where the boundary between empty and sold regions.
+
+A typical implementation assigns the corner points of the aabb a bit value which is 0 for empty and 1 for solid. Using these values a binary value can be built. Assigns a bit value to each corner. The final value can then be looked up and solved. There are only 16 different values, so the intersection can be implemented for each of these values. Each value represents one unique manifold value. Projection proceeds by calulating the penetration distance for each of the axises/edges of the manifold that needs to be solved.
+
+This also has the advantage that the 'solid-ness' can be changed programatically allowing effects like one way floors and walls to be easily implemented. As an example a one way floor is only solid if the object has a downward velocity and is crossing or intersects the top edge of the tile
+
+Signed distance has the advantage that the results can be cached and that aribitrary geometry can be intersected. The representation can be explict as signed distance functions can be combined. Internal edges are still a problem

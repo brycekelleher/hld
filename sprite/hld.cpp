@@ -67,9 +67,9 @@ static void InitTexture()
 
 	// solid
 	{
-		unsigned char data[2] = { 0xff };
+		unsigned char data[4] = { 0xff, 0xff, 0xff, 0xff };
 		glBindTexture(GL_TEXTURE_2D, BUILTIN_SOLID);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -78,9 +78,13 @@ static void InitTexture()
 
 	// alpha hline
 	{
-		unsigned char data[2] = { 0xff, 0x0 };
+		unsigned char data[8] =
+		{
+			0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0x0
+		};
 		glBindTexture(GL_TEXTURE_2D, BUILTIN_HLINE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 2, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -89,9 +93,14 @@ static void InitTexture()
 	
 	// alpha vline
 	{
-		unsigned char data[2] = { 0xff, 0x0 };
+		// this is the same as hline, just the dimensions have changed
+		unsigned char data[8] =
+		{
+			0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0x0
+		};
 		glBindTexture(GL_TEXTURE_2D, BUILTIN_VLINE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 1, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -100,9 +109,15 @@ static void InitTexture()
 
 	// alpha checkerboard
 	{
-		unsigned char data[4] = { 0xff, 0x0, 0x0, 0xff };
+		unsigned char data[16] =
+		{
+			0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0xff
+		};
 		glBindTexture(GL_TEXTURE_2D, BUILTIN_CHECK);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -111,9 +126,15 @@ static void InitTexture()
 
 	// alpha point
 	{
-		unsigned char data[4] = { 0xff, 0x0, 0x0, 0x0 };
+		unsigned char data[16] =
+		{
+			0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0
+		};
 		glBindTexture(GL_TEXTURE_2D, BUILTIN_POINT);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -122,17 +143,27 @@ static void InitTexture()
 
 	// alpha diagonal lines
 	{
-		unsigned char data[16] =
+		unsigned char data[64] =
 		{
-			 0x0,  0x0, 0xff,  0x0,
-			 0x0,  0x0,  0x0, 0xff,
-			0xff,  0x0,  0x0,  0x0,
-			 0x0, 0xff,  0x0,  0x0
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0x0,
+			0xff, 0xff, 0xff, 0x0
 		};
-
-
 		glBindTexture(GL_TEXTURE_2D, BUILTIN_DLINE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -300,7 +331,6 @@ static void DrawColorLayer()
 	glBindTexture(GL_TEXTURE_2D, SPR0);
 	glColor3f(1, 1, 1);
 
-
 	glBegin(GL_TRIANGLE_STRIP);
 	for (int i = 0; i < 4; i++)
 	{
@@ -314,25 +344,66 @@ static void DrawColorLayer()
 	glDisable(GL_BLEND);
 }
 
+static void DrawMultiTex()
+{
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glActiveTexture(GL_TEXTURE0);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, alphatex);
+
+	glActiveTexture(GL_TEXTURE1);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, SPR0);
+
+	glBegin(GL_TRIANGLE_STRIP);
+	for (int i = 0; i < 4; i++)
+	{
+		glMultiTexCoord2f(0, vertices[i][4], vertices[i][5]);
+		glMultiTexCoord2f(1, vertices[i][2], vertices[i][3]);
+		glColor4f(vertices[i][6], vertices[i][7], vertices[i][8], vertices[i][9]);
+		glVertex2f(vertices[i][0], vertices[i][1]);
+	}
+
+	glEnd();
+
+	glActiveTexture(GL_TEXTURE0);
+	glDisable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+	glDisable(GL_TEXTURE_2D);
+
+	glDisable(GL_BLEND);
+}
+
 static void DrawSpr()
 {
 
 	// setup the state
+	// this would all be done by the client normally
 	{
 		alphatex = BUILTIN_SOLID;
 		flipx = 1;
 		flipy = 1;
+		rgba[3] = 1.0f;
 
 		// this would be done by the client
-		//if ((framenum & 0x3) == (rand() %4))
-		//	alphatex = ((rand() % 2) ? BUILTIN_VLINE : BUILTIN_POINT);
+		if ((framenum & 0x3) == (rand() %4))
+		{
+			static GLuint temp[] = { BUILTIN_DLINE, BUILTIN_POINT, BUILTIN_VLINE };
+			alphatex = temp[rand() % 3];
+		}
+
+		static float trans[] = { 1.0f, 0.9f, 0.8f, 0.7f, 0.6f, 0.5f, 0.6f, 0.7f, 0.8f, 0.8f, 1.0f };
+		rgba[3] = trans[framenum % 11];
 	}
 
 	AssembleVertexData();
 
-	DrawAlphaLayer();
+//	DrawAlphaLayer();
 
-	DrawColorLayer();
+//      DrawColorLayer();
+	DrawMultiTex();
 }
 
 static void Draw()
@@ -385,9 +456,9 @@ static void InitGlut(int argc, char *argv[])
 	glutTimerFunc(33, TimerFunc, 0);
 
 	// need to explictly request an alpha plane or it isn't created
-	int alphabits;
-	glGetIntegerv(GL_ALPHA_BITS, &alphabits);
-	printf("alphabits = %i\n", alphabits);
+	//int alphabits;
+	//glGetIntegerv(GL_ALPHA_BITS, &alphabits);
+	//printf("alphabits = %i\n", alphabits);
 }
 
 int main(int argc, char *argv[])
